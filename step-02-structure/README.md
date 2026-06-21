@@ -163,10 +163,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko">
-      <body className={inter.className}>
-        <nav className="h-14 border-b px-6 flex items-center">
-          <span className="font-semibold">KanbanApp</span>
-        </nav>
+      <body className={`${inter.className} bg-gray-50 min-h-screen`}>
+        <Navbar />
         {children}
       </body>
     </html>
@@ -268,8 +266,8 @@ import Link from 'next/link'
 
 export default function Navbar() {
   return (
-    <header className="h-14 border-b px-6 flex items-center justify-between bg-white">
-      <Link href="/" className="font-bold text-lg">
+    <header className="h-14 border-b px-6 flex items-center justify-between bg-white shadow-sm">
+      <Link href="/" className="font-bold text-lg text-gray-900">
         KanbanApp
       </Link>
       <nav className="flex gap-4 text-sm">
