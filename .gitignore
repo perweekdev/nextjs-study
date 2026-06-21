@@ -9,3 +9,6 @@ Thumbs.db
 .vercel/
 out/
 dist/
+
+# Claude
+.claude/
