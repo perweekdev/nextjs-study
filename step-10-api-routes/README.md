@@ -52,16 +52,18 @@ export async function POST(request: NextRequest) {
 // app/api/boards/[boardId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 
-type Context = { params: { boardId: string } }
+type Context = { params: Promise<{ boardId: string }> }
 
 export async function GET(request: NextRequest, { params }: Context) {
-  const board = await db.board.findUnique({ where: { id: params.boardId } })
+  const { boardId } = await params
+  const board = await db.board.findUnique({ where: { id: boardId } })
   if (!board) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   return NextResponse.json(board)
 }
 
 export async function DELETE(request: NextRequest, { params }: Context) {
-  await db.board.delete({ where: { id: params.boardId } })
+  const { boardId } = await params
+  await db.board.delete({ where: { id: boardId } })
   return new NextResponse(null, { status: 204 })
 }
 ```
@@ -251,16 +253,18 @@ export async function POST(request: Request) {
 import { NextRequest, NextResponse } from 'next/server'
 import { store } from '@/lib/store'
 
-type Context = { params: { boardId: string } }
+type Context = { params: Promise<{ boardId: string }> }
 
 export async function GET(_req: NextRequest, { params }: Context) {
-  const board = store.boards.find((b) => b.id === params.boardId)
+  const { boardId } = await params
+  const board = store.boards.find((b) => b.id === boardId)
   if (!board) return NextResponse.json({ error: '보드를 찾을 수 없습니다' }, { status: 404 })
   return NextResponse.json(board)
 }
 
 export async function DELETE(_req: NextRequest, { params }: Context) {
-  const idx = store.boards.findIndex((b) => b.id === params.boardId)
+  const { boardId } = await params
+  const idx = store.boards.findIndex((b) => b.id === boardId)
   if (idx === -1) return NextResponse.json({ error: '보드를 찾을 수 없습니다' }, { status: 404 })
   store.boards.splice(idx, 1)
   return new NextResponse(null, { status: 204 })
@@ -275,9 +279,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { store } from '@/lib/store'
 
-type Context = { params: { cardId: string } }
+type Context = { params: Promise<{ cardId: string }> }
 
 export async function PATCH(request: NextRequest, { params }: Context) {
+  const { cardId } = await params
   const { targetColumnId } = await request.json()
 
   let movedCard = null
@@ -285,7 +290,7 @@ export async function PATCH(request: NextRequest, { params }: Context) {
   // 기존 컬럼에서 카드 제거
   for (const board of store.boards) {
     for (const column of board.columns) {
-      const idx = column.cards.findIndex((c) => c.id === params.cardId)
+      const idx = column.cards.findIndex((c) => c.id === cardId)
       if (idx !== -1) {
         movedCard = column.cards.splice(idx, 1)[0]
         break

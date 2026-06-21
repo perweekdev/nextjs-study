@@ -101,10 +101,11 @@ async function getBoard(boardId: string) {
   }
 }
 
-type Props = { params: { boardId: string } }
+type Props = { params: Promise<{ boardId: string }> }
 
 export default async function BoardPage({ params }: Props) {
-  const board = await getBoard(params.boardId)
+  const { boardId } = await params
+  const board = await getBoard(boardId)
 
   return (
     <div className="p-6">
@@ -345,10 +346,11 @@ const MOCK_BOARD: Board = {
 }
 
 type Props = {
-  params: { boardId: string }
+  params: Promise<{ boardId: string }>
 }
 
-export default function BoardDetailPage({ params }: Props) {
+export default async function BoardDetailPage({ params }: Props) {
+  const { boardId } = await params
   return (
     <main className="p-6">
       <h1 className="text-xl font-bold mb-6">{MOCK_BOARD.title}</h1>

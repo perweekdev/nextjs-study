@@ -35,11 +35,12 @@ app/
 ```tsx
 // app/board/[boardId]/page.tsx
 type Props = {
-  params: { boardId: string }
+  params: Promise<{ boardId: string }>
 }
 
-export default function BoardPage({ params }: Props) {
-  return <h1>보드 ID: {params.boardId}</h1>
+export default async function BoardPage({ params }: Props) {
+  const { boardId } = await params
+  return <h1>보드 ID: {boardId}</h1>
 }
 ```
 
@@ -168,11 +169,11 @@ export default function BoardListPage() {
 ```tsx
 // app/board/[boardId]/page.tsx
 type Props = {
-  params: { boardId: string }
+  params: Promise<{ boardId: string }>
 }
 
-export default function BoardDetailPage({ params }: Props) {
-  const { boardId } = params
+export default async function BoardDetailPage({ params }: Props) {
+  const { boardId } = await params
 
   return (
     <main className="p-8">
@@ -244,13 +245,14 @@ export default function BoardListPage() {
 ```tsx
 /* app/board/[boardId]/page.tsx */
 type Props = {
-  params: { boardId: string }
+  params: Promise<{ boardId: string }>
 }
 
-export default function BoardDetailPage({ params }: Props) {
+export default async function BoardDetailPage({ params }: Props) {
+  const { boardId } = await params
   return (
     <main className="p-8">
-      <h1 className="text-2xl font-bold mb-6">보드: {params.boardId}</h1>
+      <h1 className="text-2xl font-bold mb-6">보드: {boardId}</h1>
       <p className="text-gray-400">Step 05에서 칸반 뷰를 구현합니다.</p>
     </main>
   )

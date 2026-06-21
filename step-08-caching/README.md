@@ -246,11 +246,12 @@ import { getBoard } from '@/lib/data'
 export const dynamic = 'force-dynamic'
 
 type Props = {
-  params: { boardId: string }
+  params: Promise<{ boardId: string }>
 }
 
 export default async function BoardDetailPage({ params }: Props) {
-  const board = await getBoard(params.boardId)
+  const { boardId } = await params
+  const board = await getBoard(boardId)
 
   return (
     <main className="p-6">

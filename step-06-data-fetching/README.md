@@ -137,13 +137,14 @@ async function getMembers(boardId: string) {
   return res.json()
 }
 
-type Props = { params: { boardId: string } }
+type Props = { params: Promise<{ boardId: string }> }
 
 export default async function BoardPage({ params }: Props) {
+  const { boardId } = await params
   // Promise.all로 병렬 패칭 — 순차 대비 2배 빠름
   const [board, members] = await Promise.all([
-    getBoard(params.boardId),
-    getMembers(params.boardId),
+    getBoard(boardId),
+    getMembers(boardId),
   ])
 
   return (
@@ -297,11 +298,12 @@ import Column from '@/components/board/Column'
 import { getBoard } from '@/lib/data'
 
 type Props = {
-  params: { boardId: string }
+  params: Promise<{ boardId: string }>
 }
 
 export default async function BoardDetailPage({ params }: Props) {
-  const board = await getBoard(params.boardId)
+  const { boardId } = await params
+  const board = await getBoard(boardId)
 
   return (
     <main className="p-6">
