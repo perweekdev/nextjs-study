@@ -1,12 +1,9 @@
 import Link from 'next/link'
+import { getBoards } from '@/lib/data'
 
-// Step 06에서 DB 연동으로 교체 예정 — 지금은 목업 데이터 사용
-const MOCK_BOARDS = [
-  { id: 'board-1', title: '프로젝트 A' },
-  { id: 'board-2', title: '프로젝트 B' },
-]
+export default async function BoardListPage() {
+  const boards = await getBoards()
 
-export default function BoardListPage() {
   return (
     <main className="p-8">
       <div className="flex items-center justify-between mb-6">
@@ -19,11 +16,11 @@ export default function BoardListPage() {
         </Link>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {MOCK_BOARDS.map((board) => (
+        {boards.map((board) => (
           <Link
             key={board.id}
             href={`/board/${board.id}`}
-            className="block border rounded-xl p-5 hover:shadow-md transition"
+            className="block border rounded-xl p-5 bg-white hover:shadow-md transition"
           >
             <h2 className="font-semibold">{board.title}</h2>
           </Link>
