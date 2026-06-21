@@ -3,7 +3,10 @@ import './globals.css'
 import Navbar from '@/components/layout/Navbar'
 
 export const metadata: Metadata = {
-  title: 'KanbanApp',
+  title: {
+    template: '%s | KanbanApp',  // 각 페이지 제목 뒤에 자동으로 붙음
+    default: 'KanbanApp',
+  },
   description: '팀 협업 칸반 보드',
 }
 
