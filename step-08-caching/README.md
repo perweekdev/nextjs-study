@@ -188,3 +188,123 @@ export async function createCard(columnId: string, title: string) {
 - [ ] `revalidatePath`와 `revalidateTag`를 언제 쓰는지 안다
 - [ ] 보드 목록과 카드 목록에 서로 다른 캐싱 전략을 적용해봤다
 - [ ] `export const revalidate = 60` 으로 페이지 단위 ISR을 설정했다
+
+---
+
+## 실습
+
+> 📁 작업 위치: `project-kanban/kanban-board/`
+
+### 1. 보드 목록 페이지 — ISR 적용
+
+```tsx
+/* app/board/page.tsx */
+import Link from 'next/link'
+import { getBoards } from '@/lib/data'
+
+// 60초마다 재검증 (ISR)
+export const revalidate = 60
+
+export default async function BoardListPage() {
+  const boards = await getBoards()
+
+  return (
+    <main className="p-8">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">내 보드</h1>
+        <Link
+          href="/board/new"
+          className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600"
+        >
+          + 새 보드
+        </Link>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {boards.map((board) => (
+          <Link
+            key={board.id}
+            href={`/board/${board.id}`}
+            className="block border rounded-xl p-5 bg-white hover:shadow-md transition"
+          >
+            <h2 className="font-semibold">{board.title}</h2>
+          </Link>
+        ))}
+      </div>
+    </main>
+  )
+}
+```
+
+### 2. 보드 상세 페이지 — no-store 적용 (항상 최신)
+
+```tsx
+/* app/board/[boardId]/page.tsx */
+import Column from '@/components/board/Column'
+import { getBoard } from '@/lib/data'
+
+// 칸반 뷰는 항상 최신 데이터 필요
+export const dynamic = 'force-dynamic'
+
+type Props = {
+  params: { boardId: string }
+}
+
+export default async function BoardDetailPage({ params }: Props) {
+  const board = await getBoard(params.boardId)
+
+  return (
+    <main className="p-6">
+      <h1 className="text-xl font-bold mb-6">{board.title}</h1>
+      <div className="flex gap-4 overflow-x-auto pb-4">
+        {board.columns.map((column) => (
+          <Column key={column.id} column={column} />
+        ))}
+      </div>
+    </main>
+  )
+}
+```
+
+### 3. Server Actions에 revalidateTag 추가
+
+```ts
+/* lib/actions/card.ts */
+'use server'
+
+import { revalidatePath, revalidateTag } from 'next/cache'
+import { store } from '../store'
+
+export async function createCard(columnId: string, formData: FormData) {
+  const title = formData.get('title') as string
+  if (!title?.trim()) return
+
+  for (const board of store.boards) {
+    const column = board.columns.find((c) => c.id === columnId)
+    if (column) {
+      column.cards.push({ id: `card-${Date.now()}`, title: title.trim() })
+      break
+    }
+  }
+  revalidateTag('boards')           // 보드 목록 캐시 무효화
+  revalidatePath('/board/[boardId]', 'page')
+}
+
+export async function deleteCard(cardId: string) {
+  for (const board of store.boards) {
+    for (const column of board.columns) {
+      const idx = column.cards.findIndex((c) => c.id === cardId)
+      if (idx !== -1) {
+        column.cards.splice(idx, 1)
+        break
+      }
+    }
+  }
+  revalidateTag('boards')
+  revalidatePath('/board/[boardId]', 'page')
+}
+```
+
+### 4. 확인
+
+- 카드 추가 후 `/board` 목록 페이지가 즉시 갱신되는지 확인
+- 개발자 도구 Network 탭에서 페이지 요청 캐시 동작 확인

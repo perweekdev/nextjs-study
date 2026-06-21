@@ -206,3 +206,136 @@ export default function KanbanBoard({ columns }: { columns: Column[] }) {
 - [ ] `next/font`로 Google 폰트를 자체 호스팅할 수 있다
 - [ ] 외부 이미지 도메인을 `next.config.js`에 등록했다
 - [ ] 드래그앤드롭 라이브러리를 동적 import로 분리했다
+
+---
+
+## 실습
+
+> 📁 작업 위치: `project-kanban/kanban-board/`
+
+### 1. 루트 레이아웃 — next/font 적용
+
+```tsx
+/* app/layout.tsx */
+import type { Metadata } from 'next'
+import { Noto_Sans_KR } from 'next/font/google'
+import './globals.css'
+import Navbar from '@/components/layout/Navbar'
+
+const notoSansKR = Noto_Sans_KR({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+})
+
+export const metadata: Metadata = {
+  title: { template: '%s | KanbanApp', default: 'KanbanApp' },
+  description: '팀 협업 칸반 보드',
+}
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="ko">
+      <body className={`${notoSansKR.className} bg-gray-50 min-h-screen`}>
+        <Navbar />
+        {children}
+      </body>
+    </html>
+  )
+}
+```
+
+### 2. next.config.js — 외부 이미지 도메인 허용
+
+```js
+/* next.config.js */
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',  // GitHub 아바타
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',      // Google 아바타
+      },
+      {
+        protocol: 'https',
+        hostname: 'ui-avatars.com',                 // 텍스트 아바타 생성 서비스
+      },
+    ],
+  },
+}
+
+module.exports = nextConfig
+```
+
+### 3. 카드에 담당자 아바타 추가
+
+```tsx
+/* components/board/KanbanCard.tsx */
+import Image from 'next/image'
+import type { Card } from '@/types'
+
+type Props = {
+  card: Card
+}
+
+export default function KanbanCard({ card }: Props) {
+  const avatarUrl = card.assignee
+    ? `https://ui-avatars.com/api/?name=${encodeURIComponent(card.assignee)}&size=24&background=random`
+    : null
+
+  return (
+    <div className="bg-white border rounded-lg p-3 shadow-sm hover:shadow-md transition cursor-pointer">
+      <p className="text-sm font-medium">{card.title}</p>
+      {card.description && (
+        <p className="text-xs text-gray-400 mt-1 line-clamp-2">{card.description}</p>
+      )}
+      {avatarUrl && (
+        <div className="flex items-center gap-1.5 mt-2">
+          <Image
+            src={avatarUrl}
+            alt={card.assignee ?? ''}
+            width={20}
+            height={20}
+            className="rounded-full"
+          />
+          <span className="text-xs text-gray-500">{card.assignee}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+```
+
+### 4. types/index.ts — assignee 필드 확인
+
+```ts
+/* types/index.ts */
+export type Card = {
+  id: string
+  title: string
+  description?: string
+  assignee?: string   // 이미 있으면 OK
+}
+
+export type Column = {
+  id: string
+  title: string
+  cards: Card[]
+}
+
+export type Board = {
+  id: string
+  title: string
+  columns: Column[]
+}
+```
+
+### 5. 확인
+
+- 폰트가 한글 기준으로 Noto Sans KR로 바뀌었는지 확인
+- 카드에 `assignee` 값이 있으면 아바타 이미지 표시 확인
+- 브라우저 개발자 도구 → Network → Img 탭에서 WebP로 변환됐는지 확인

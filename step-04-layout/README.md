@@ -198,3 +198,100 @@ export default function BoardLayout({
 - [ ] `layout.tsx`와 `template.tsx`의 차이를 안다
 - [ ] `metadata` export로 페이지 제목을 설정했다
 - [ ] 보드 전용 사이드바를 `board/layout.tsx`로 구현해봤다
+
+---
+
+## 실습
+
+> 📁 작업 위치: `project-kanban/kanban-board/`
+
+### 1. 루트 레이아웃 — metadata 템플릿 추가
+
+```tsx
+/* app/layout.tsx */
+import type { Metadata } from 'next'
+import './globals.css'
+import Navbar from '@/components/layout/Navbar'
+
+export const metadata: Metadata = {
+  title: {
+    template: '%s | KanbanApp',  // 각 페이지 제목 뒤에 자동으로 붙음
+    default: 'KanbanApp',
+  },
+  description: '팀 협업 칸반 보드',
+}
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="ko">
+      <body className="bg-gray-50 min-h-screen">
+        <Navbar />
+        {children}
+      </body>
+    </html>
+  )
+}
+```
+
+### 2. 보드 전용 레이아웃 생성 (사이드바 포함)
+
+```tsx
+/* app/board/layout.tsx */
+import Link from 'next/link'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: '내 보드',
+}
+
+// Step 06에서 DB 연동으로 교체 예정
+const MOCK_BOARDS = [
+  { id: 'board-1', title: '프로젝트 A' },
+  { id: 'board-2', title: '프로젝트 B' },
+]
+
+export default function BoardLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex h-[calc(100vh-3.5rem)]">
+      {/* 사이드바 */}
+      <aside className="w-56 border-r bg-white p-4 overflow-y-auto flex-shrink-0">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-semibold text-gray-400 uppercase">내 보드</p>
+          <Link href="/board/new" className="text-blue-500 text-lg leading-none">
+            +
+          </Link>
+        </div>
+        <ul className="space-y-1">
+          {MOCK_BOARDS.map((board) => (
+            <li key={board.id}>
+              <Link
+                href={`/board/${board.id}`}
+                className="block px-3 py-2 rounded-lg hover:bg-gray-100 text-sm text-gray-700"
+              >
+                {board.title}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </aside>
+
+      {/* 메인 콘텐츠 */}
+      <section className="flex-1 overflow-auto">{children}</section>
+    </div>
+  )
+}
+```
+
+### 3. 확인
+
+- `http://localhost:3000/board` → 좌측 사이드바 + 보드 목록
+- 사이드바에서 보드 클릭 → 사이드바 유지된 채 콘텐츠만 전환되는지 확인
+- 브라우저 탭 제목이 `내 보드 | KanbanApp` 으로 표시되는지 확인

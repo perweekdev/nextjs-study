@@ -206,3 +206,228 @@ export default function DeleteCardButton({ cardId }: { cardId: string }) {
 - [ ] `revalidatePath`로 캐시를 무효화할 수 있다
 - [ ] `useFormStatus`로 로딩 상태를 표시할 수 있다
 - [ ] 카드 생성 폼을 Server Action으로 구현해봤다
+
+---
+
+## 실습
+
+> 📁 작업 위치: `project-kanban/kanban-board/`
+
+### 1. 인메모리 스토어 생성
+
+DB 연동 전까지 사용하는 임시 저장소입니다.
+
+```ts
+/* lib/store.ts */
+import type { Board } from '@/types'
+
+// 서버 메모리에 저장 (개발용 — 실제 배포 시 DB로 교체)
+export const store: { boards: Board[] } = {
+  boards: [
+    {
+      id: 'board-1',
+      title: '프로젝트 A',
+      columns: [
+        {
+          id: 'col-1',
+          title: 'Todo',
+          cards: [
+            { id: 'card-1', title: '로그인 페이지 디자인' },
+            { id: 'card-2', title: 'DB 스키마 설계', description: 'Prisma 사용' },
+          ],
+        },
+        { id: 'col-2', title: 'In Progress', cards: [{ id: 'card-3', title: 'Navbar 구현' }] },
+        { id: 'col-3', title: 'Done', cards: [{ id: 'card-4', title: '프로젝트 세팅' }] },
+      ],
+    },
+    { id: 'board-2', title: '프로젝트 B', columns: [] },
+  ],
+}
+```
+
+### 2. lib/data.ts 업데이트 — store에서 읽기
+
+```ts
+/* lib/data.ts */
+import { store } from './store'
+import type { Board } from '@/types'
+
+export async function getBoards() {
+  return store.boards.map(({ id, title }) => ({ id, title }))
+}
+
+export async function getBoard(boardId: string): Promise<Board> {
+  const board = store.boards.find((b) => b.id === boardId)
+  if (!board) throw new Error('보드를 찾을 수 없습니다')
+  return board
+}
+```
+
+### 3. 카드 Server Actions 생성
+
+```ts
+/* lib/actions/card.ts */
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { store } from '../store'
+
+// 카드 생성
+export async function createCard(columnId: string, formData: FormData) {
+  const title = formData.get('title') as string
+  if (!title?.trim()) return
+
+  for (const board of store.boards) {
+    const column = board.columns.find((c) => c.id === columnId)
+    if (column) {
+      column.cards.push({ id: `card-${Date.now()}`, title: title.trim() })
+      break
+    }
+  }
+  revalidatePath('/board/[boardId]', 'page')
+}
+
+// 카드 삭제
+export async function deleteCard(cardId: string) {
+  for (const board of store.boards) {
+    for (const column of board.columns) {
+      const idx = column.cards.findIndex((c) => c.id === cardId)
+      if (idx !== -1) {
+        column.cards.splice(idx, 1)
+        break
+      }
+    }
+  }
+  revalidatePath('/board/[boardId]', 'page')
+}
+```
+
+### 4. 보드 Server Actions 생성
+
+```ts
+/* lib/actions/board.ts */
+'use server'
+
+import { redirect } from 'next/navigation'
+import { store } from '../store'
+
+// 보드 생성
+export async function createBoard(formData: FormData) {
+  const title = formData.get('title') as string
+  if (!title?.trim()) return
+
+  const newBoard = {
+    id: `board-${Date.now()}`,
+    title: title.trim(),
+    columns: [
+      { id: `col-${Date.now()}-1`, title: 'Todo', cards: [] },
+      { id: `col-${Date.now()}-2`, title: 'In Progress', cards: [] },
+      { id: `col-${Date.now()}-3`, title: 'Done', cards: [] },
+    ],
+  }
+  store.boards.push(newBoard)
+  redirect(`/board/${newBoard.id}`)
+}
+```
+
+### 5. 카드 추가 폼 컴포넌트 업데이트
+
+```tsx
+/* components/board/AddCardButton.tsx */
+'use client'
+
+import { useState, useRef } from 'react'
+import { useFormStatus } from 'react-dom'
+import { createCard } from '@/lib/actions/card'
+
+function SubmitButton() {
+  const { pending } = useFormStatus()
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="bg-blue-500 text-white text-xs px-3 py-1 rounded disabled:opacity-50"
+    >
+      {pending ? '추가 중...' : '추가'}
+    </button>
+  )
+}
+
+export default function AddCardButton({ columnId }: { columnId: string }) {
+  const [open, setOpen] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null)
+
+  const action = async (formData: FormData) => {
+    await createCard(columnId, formData)
+    formRef.current?.reset()
+    setOpen(false)
+  }
+
+  return (
+    <div className="mt-2">
+      {open ? (
+        <form ref={formRef} action={action} className="bg-white border rounded-lg p-2 space-y-2">
+          <input
+            name="title"
+            className="w-full border rounded p-1.5 text-sm"
+            placeholder="카드 제목 입력..."
+            autoFocus
+            required
+          />
+          <div className="flex gap-2 items-center">
+            <SubmitButton />
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="text-xs text-gray-400 hover:text-gray-600"
+            >
+              취소
+            </button>
+          </div>
+        </form>
+      ) : (
+        <button
+          onClick={() => setOpen(true)}
+          className="w-full text-left text-sm text-gray-400 hover:text-gray-700 hover:bg-gray-200 px-2 py-1.5 rounded-lg"
+        >
+          + 카드 추가
+        </button>
+      )}
+    </div>
+  )
+}
+```
+
+### 6. 새 보드 생성 폼 업데이트
+
+```tsx
+/* app/board/new/page.tsx */
+import { createBoard } from '@/lib/actions/board'
+
+export default function NewBoardPage() {
+  return (
+    <main className="p-8 max-w-md">
+      <h1 className="text-2xl font-bold mb-6">새 보드 만들기</h1>
+      <form action={createBoard} className="space-y-4">
+        <input
+          name="title"
+          placeholder="보드 이름"
+          required
+          className="w-full border rounded-lg p-3 text-sm"
+        />
+        <button
+          type="submit"
+          className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
+        >
+          만들기
+        </button>
+      </form>
+    </main>
+  )
+}
+```
+
+### 7. 확인
+
+- `/board/new` → 보드 이름 입력 후 제출 → 새 보드 상세 페이지로 이동
+- `/board/board-1` → `+ 카드 추가` → 카드 입력 후 추가 → 카드 목록에 즉시 반영

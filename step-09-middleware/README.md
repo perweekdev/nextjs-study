@@ -220,3 +220,117 @@ export default function LoginPage() {
 - [ ] 인증 토큰이 없을 때 `/login`으로 리다이렉트할 수 있다
 - [ ] `from` 파라미터로 로그인 후 원래 경로로 돌아가도록 구현했다
 - [ ] 정적 파일 경로는 미들웨어에서 제외했다
+
+---
+
+## 실습
+
+> 📁 작업 위치: `project-kanban/kanban-board/`
+
+### 1. 미들웨어 생성
+
+```ts
+/* middleware.ts  ← app/ 바깥, 프로젝트 루트에 생성 */
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+
+const PUBLIC_PATHS = ['/', '/login', '/register']
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // 공개 경로는 통과
+  if (PUBLIC_PATHS.includes(pathname)) return NextResponse.next()
+
+  // 인증 토큰 확인
+  const token = request.cookies.get('auth-token')?.value
+
+  if (!token) {
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('from', pathname)
+    return NextResponse.redirect(loginUrl)
+  }
+
+  return NextResponse.next()
+}
+
+export const config = {
+  // 정적 파일, 이미지, favicon 제외
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+}
+```
+
+### 2. 로그인 레이아웃 생성
+
+```tsx
+/* app/(auth)/layout.tsx */
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center">
+      {children}
+    </div>
+  )
+}
+```
+
+### 3. 로그인 페이지 생성
+
+```tsx
+/* app/(auth)/login/page.tsx */
+'use client'
+
+import { useSearchParams, useRouter } from 'next/navigation'
+import { Suspense } from 'react'
+
+function LoginForm() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const from = searchParams.get('from') ?? '/board'
+
+  function handleLogin(e: React.FormEvent) {
+    e.preventDefault()
+    // 실제 인증 로직 자리 (Step 이후 NextAuth로 교체)
+    document.cookie = 'auth-token=demo-token; path=/'
+    router.push(from)
+  }
+
+  return (
+    <form onSubmit={handleLogin} className="w-full max-w-sm space-y-4 p-8 bg-white rounded-xl border shadow-sm">
+      <h1 className="text-xl font-bold text-center">로그인</h1>
+      <input
+        type="email"
+        placeholder="이메일"
+        defaultValue="demo@example.com"
+        className="w-full border rounded-lg p-3 text-sm"
+      />
+      <input
+        type="password"
+        placeholder="비밀번호"
+        defaultValue="password"
+        className="w-full border rounded-lg p-3 text-sm"
+      />
+      <button
+        type="submit"
+        className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
+      >
+        로그인
+      </button>
+    </form>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  )
+}
+```
+
+### 4. 확인
+
+- `http://localhost:3000/board` 접속 → `/login?from=/board` 로 리다이렉트
+- 로그인 버튼 클릭 → 쿠키 설정 후 `/board` 로 이동
+- 이후 `/board` 직접 접속 → 정상 접근 (쿠키 있음)
+- 브라우저 쿠키 삭제 후 `/board` 재접속 → 다시 로그인 페이지로

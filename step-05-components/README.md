@@ -196,3 +196,173 @@ export default function AddCardButton({ columnId }: { columnId: string }) {
 - [ ] Client 안에서 Server를 import하면 안 되는 이유를 안다
 - [ ] `children` props로 서버 컴포넌트를 클라이언트에 전달할 수 있다
 - [ ] 칸반 보드에서 클라이언트 컴포넌트 경계를 직접 설계해봤다
+
+---
+
+## 실습
+
+> 📁 작업 위치: `project-kanban/kanban-board/`
+
+### 1. 카드 컴포넌트 생성 (Server Component)
+
+```tsx
+/* components/board/KanbanCard.tsx */
+import type { Card } from '@/types'
+
+type Props = {
+  card: Card
+}
+
+export default function KanbanCard({ card }: Props) {
+  return (
+    <div className="bg-white border rounded-lg p-3 shadow-sm hover:shadow-md transition cursor-pointer">
+      <p className="text-sm font-medium">{card.title}</p>
+      {card.description && (
+        <p className="text-xs text-gray-400 mt-1 line-clamp-2">{card.description}</p>
+      )}
+    </div>
+  )
+}
+```
+
+### 2. 컬럼 컴포넌트 생성 (Server Component)
+
+```tsx
+/* components/board/Column.tsx */
+import type { Column as ColumnType } from '@/types'
+import KanbanCard from './KanbanCard'
+import AddCardButton from './AddCardButton'
+
+type Props = {
+  column: ColumnType
+}
+
+export default function Column({ column }: Props) {
+  return (
+    <div className="bg-gray-100 rounded-xl p-3 w-64 flex-shrink-0">
+      {/* 컬럼 헤더 */}
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold text-sm">{column.title}</h3>
+        <span className="text-xs text-gray-400 bg-gray-200 px-2 py-0.5 rounded-full">
+          {column.cards.length}
+        </span>
+      </div>
+
+      {/* 카드 목록 */}
+      <div className="space-y-2 min-h-[4rem]">
+        {column.cards.map((card) => (
+          <KanbanCard key={card.id} card={card} />
+        ))}
+      </div>
+
+      {/* 카드 추가 버튼 (Client Component) */}
+      <AddCardButton columnId={column.id} />
+    </div>
+  )
+}
+```
+
+### 3. 카드 추가 버튼 생성 (Client Component)
+
+```tsx
+/* components/board/AddCardButton.tsx */
+'use client'
+
+import { useState } from 'react'
+
+type Props = {
+  columnId: string
+}
+
+export default function AddCardButton({ columnId }: Props) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="mt-2">
+      {open ? (
+        <div className="bg-white border rounded-lg p-2 space-y-2">
+          <input
+            className="w-full border rounded p-1.5 text-sm"
+            placeholder="카드 제목 입력..."
+            autoFocus
+          />
+          <div className="flex gap-2">
+            <button className="bg-blue-500 text-white text-xs px-3 py-1 rounded">
+              추가
+            </button>
+            <button
+              onClick={() => setOpen(false)}
+              className="text-xs text-gray-400 hover:text-gray-600"
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setOpen(true)}
+          className="w-full text-left text-sm text-gray-400 hover:text-gray-700 hover:bg-gray-200 px-2 py-1.5 rounded-lg"
+        >
+          + 카드 추가
+        </button>
+      )}
+    </div>
+  )
+}
+```
+
+### 4. 보드 상세 페이지에 컬럼 연결
+
+```tsx
+/* app/board/[boardId]/page.tsx */
+import Column from '@/components/board/Column'
+import type { Board } from '@/types'
+
+// Step 06에서 async 함수로 교체 예정
+const MOCK_BOARD: Board = {
+  id: 'board-1',
+  title: '프로젝트 A',
+  columns: [
+    {
+      id: 'col-1',
+      title: 'Todo',
+      cards: [
+        { id: 'card-1', title: '로그인 페이지 디자인' },
+        { id: 'card-2', title: 'DB 스키마 설계', description: 'Prisma 사용' },
+      ],
+    },
+    {
+      id: 'col-2',
+      title: 'In Progress',
+      cards: [{ id: 'card-3', title: 'Navbar 컴포넌트 구현' }],
+    },
+    {
+      id: 'col-3',
+      title: 'Done',
+      cards: [{ id: 'card-4', title: '프로젝트 세팅' }],
+    },
+  ],
+}
+
+type Props = {
+  params: { boardId: string }
+}
+
+export default function BoardDetailPage({ params }: Props) {
+  return (
+    <main className="p-6">
+      <h1 className="text-xl font-bold mb-6">{MOCK_BOARD.title}</h1>
+      <div className="flex gap-4 overflow-x-auto pb-4">
+        {MOCK_BOARD.columns.map((column) => (
+          <Column key={column.id} column={column} />
+        ))}
+      </div>
+    </main>
+  )
+}
+```
+
+### 5. 확인
+
+- `http://localhost:3000/board/board-1` → 3개 컬럼 + 카드 표시
+- `+ 카드 추가` 클릭 → 인풋 열리는지 확인 (아직 실제 저장 안 됨 — Step 07에서 연결)

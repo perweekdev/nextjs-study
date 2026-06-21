@@ -201,3 +201,72 @@ NEXT_PUBLIC_APP_NAME="KanbanApp"
 - [ ] `npm run build`로 빌드 에러가 없는지 확인했다
 - [ ] Vercel에 프로젝트를 연결하고 환경변수를 설정했다
 - [ ] GitHub에 push하면 자동 배포가 되는지 확인했다
+
+---
+
+## 실습
+
+> 📁 작업 위치: `project-kanban/kanban-board/`
+
+### 1. 환경변수 파일 생성
+
+```bash
+# .env.local  ← .gitignore에 이미 포함됨
+NEXT_PUBLIC_APP_NAME="KanbanApp"
+```
+
+```bash
+# .env.local.example  ← git에 올려서 팀원과 공유
+NEXT_PUBLIC_APP_NAME="KanbanApp"
+# DATABASE_URL="postgresql://user:pass@host:5432/kanban"
+# NEXTAUTH_SECRET="your-secret-here"
+# NEXTAUTH_URL="http://localhost:3000"
+```
+
+### 2. 환경변수 안전하게 사용
+
+```ts
+/* lib/env.ts */
+export const env = {
+  appName: process.env.NEXT_PUBLIC_APP_NAME ?? 'KanbanApp',
+}
+```
+
+### 3. package.json scripts 추가
+
+```json
+/* package.json */
+{
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "check": "npm run type-check && npm run lint && npm run build"
+  }
+}
+```
+
+### 4. 배포 전 검증
+
+```bash
+# 타입 에러 + 린트 + 빌드 한번에 확인
+npm run check
+```
+
+### 5. Vercel 배포
+
+```bash
+# Vercel CLI로 배포 (선택사항)
+npm install -g vercel
+vercel
+```
+
+또는 [vercel.com](https://vercel.com) → New Project → GitHub 저장소 선택 → Deploy
+
+### 6. 확인
+
+- `npm run build` 에러 없이 완료되는지 확인
+- Vercel 대시보드에서 배포 로그 확인
+- 배포된 URL(`https://your-app.vercel.app`)에서 정상 동작 확인

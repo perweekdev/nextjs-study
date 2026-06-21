@@ -135,3 +135,53 @@ export default function Counter() {
 - [ ] `create-next-app`으로 프로젝트를 생성했다
 - [ ] `npm run dev`로 로컬 서버를 띄웠다
 - [ ] 브라우저에서 `http://localhost:3000` 확인했다
+
+---
+
+## 실습
+
+> 📁 작업 위치: `project-kanban/kanban-board/`
+
+### 1. 프로젝트 생성
+
+```bash
+cd project-kanban
+npx create-next-app@latest kanban-board --typescript --tailwind --app --no-src-dir
+cd kanban-board
+npm run dev
+```
+
+### 2. 전역 스타일 초기화
+
+```css
+/* app/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+### 3. 홈 페이지 수정
+
+```tsx
+/* app/page.tsx */
+import Link from 'next/link'
+
+export default function HomePage() {
+  return (
+    <main className="min-h-screen flex flex-col items-center justify-center gap-6">
+      <h1 className="text-4xl font-bold">KanbanApp</h1>
+      <p className="text-gray-500">팀 협업을 위한 칸반 보드</p>
+      <Link
+        href="/board"
+        className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600"
+      >
+        시작하기
+      </Link>
+    </main>
+  )
+}
+```
+
+### 4. 확인
+
+브라우저에서 `http://localhost:3000` 접속 → 홈 화면 확인

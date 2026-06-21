@@ -219,3 +219,98 @@ export default function HomePage() {
 - [ ] `@/` 경로 별칭을 사용할 수 있다
 - [ ] 칸반 보드용 폴더 구조를 직접 그려봤다
 - [ ] `components/`, `lib/`, `types/` 폴더를 프로젝트에 만들었다
+
+---
+
+## 실습
+
+> 📁 작업 위치: `project-kanban/kanban-board/`
+
+### 1. 폴더 생성
+
+```bash
+mkdir -p components/board components/ui components/layout
+mkdir -p lib/actions
+mkdir -p types
+```
+
+### 2. 타입 정의 파일 생성
+
+프로젝트 전체에서 사용할 TypeScript 타입을 미리 정의합니다.
+
+```ts
+/* types/index.ts */
+export type Card = {
+  id: string
+  title: string
+  description?: string
+  assignee?: string
+}
+
+export type Column = {
+  id: string
+  title: string
+  cards: Card[]
+}
+
+export type Board = {
+  id: string
+  title: string
+  columns: Column[]
+}
+```
+
+### 3. Navbar 컴포넌트 생성
+
+```tsx
+/* components/layout/Navbar.tsx */
+import Link from 'next/link'
+
+export default function Navbar() {
+  return (
+    <header className="h-14 border-b px-6 flex items-center justify-between bg-white">
+      <Link href="/" className="font-bold text-lg">
+        KanbanApp
+      </Link>
+      <nav className="flex gap-4 text-sm">
+        <Link href="/board" className="text-gray-600 hover:text-black">
+          내 보드
+        </Link>
+      </nav>
+    </header>
+  )
+}
+```
+
+### 4. 루트 레이아웃에 Navbar 추가
+
+```tsx
+/* app/layout.tsx */
+import type { Metadata } from 'next'
+import './globals.css'
+import Navbar from '@/components/layout/Navbar'
+
+export const metadata: Metadata = {
+  title: 'KanbanApp',
+  description: '팀 협업 칸반 보드',
+}
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="ko">
+      <body>
+        <Navbar />
+        {children}
+      </body>
+    </html>
+  )
+}
+```
+
+### 5. 확인
+
+`http://localhost:3000` → 상단에 Navbar가 보이면 완료

@@ -192,3 +192,182 @@ export default function BoardLoading() {
 - [ ] `error.tsx`에 `'use client'`가 필요한 이유를 안다
 - [ ] `Promise.all`로 병렬 패칭을 구현할 수 있다
 - [ ] 스켈레톤 로딩 UI를 만들어봤다
+
+---
+
+## 실습
+
+> 📁 작업 위치: `project-kanban/kanban-board/`
+
+### 1. 목업 데이터 함수 생성
+
+실제 DB 연동 전까지 사용할 async 함수입니다. 나중에 이 함수만 교체하면 됩니다.
+
+```ts
+/* lib/data.ts */
+import type { Board } from '@/types'
+
+const MOCK_BOARDS = [
+  { id: 'board-1', title: '프로젝트 A' },
+  { id: 'board-2', title: '프로젝트 B' },
+]
+
+const MOCK_BOARD_DETAIL: Board = {
+  id: 'board-1',
+  title: '프로젝트 A',
+  columns: [
+    {
+      id: 'col-1',
+      title: 'Todo',
+      cards: [
+        { id: 'card-1', title: '로그인 페이지 디자인' },
+        { id: 'card-2', title: 'DB 스키마 설계', description: 'Prisma 사용' },
+      ],
+    },
+    {
+      id: 'col-2',
+      title: 'In Progress',
+      cards: [{ id: 'card-3', title: 'Navbar 컴포넌트 구현' }],
+    },
+    {
+      id: 'col-3',
+      title: 'Done',
+      cards: [{ id: 'card-4', title: '프로젝트 세팅' }],
+    },
+  ],
+}
+
+// 보드 목록 조회
+export async function getBoards() {
+  // 실제 DB: return await prisma.board.findMany()
+  await new Promise((r) => setTimeout(r, 500)) // 로딩 UI 확인용 딜레이
+  return MOCK_BOARDS
+}
+
+// 보드 상세 조회
+export async function getBoard(boardId: string): Promise<Board> {
+  await new Promise((r) => setTimeout(r, 800))
+  if (boardId !== 'board-1') throw new Error('보드를 찾을 수 없습니다')
+  return MOCK_BOARD_DETAIL
+}
+```
+
+### 2. 보드 목록 페이지 — async로 전환
+
+```tsx
+/* app/board/page.tsx */
+import Link from 'next/link'
+import { getBoards } from '@/lib/data'
+
+export default async function BoardListPage() {
+  const boards = await getBoards()
+
+  return (
+    <main className="p-8">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">내 보드</h1>
+        <Link
+          href="/board/new"
+          className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600"
+        >
+          + 새 보드
+        </Link>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {boards.map((board) => (
+          <Link
+            key={board.id}
+            href={`/board/${board.id}`}
+            className="block border rounded-xl p-5 bg-white hover:shadow-md transition"
+          >
+            <h2 className="font-semibold">{board.title}</h2>
+          </Link>
+        ))}
+      </div>
+    </main>
+  )
+}
+```
+
+### 3. 보드 상세 페이지 — async로 전환
+
+```tsx
+/* app/board/[boardId]/page.tsx */
+import Column from '@/components/board/Column'
+import { getBoard } from '@/lib/data'
+
+type Props = {
+  params: { boardId: string }
+}
+
+export default async function BoardDetailPage({ params }: Props) {
+  const board = await getBoard(params.boardId)
+
+  return (
+    <main className="p-6">
+      <h1 className="text-xl font-bold mb-6">{board.title}</h1>
+      <div className="flex gap-4 overflow-x-auto pb-4">
+        {board.columns.map((column) => (
+          <Column key={column.id} column={column} />
+        ))}
+      </div>
+    </main>
+  )
+}
+```
+
+### 4. 로딩 UI 생성
+
+```tsx
+/* app/board/[boardId]/loading.tsx */
+export default function BoardLoading() {
+  return (
+    <main className="p-6">
+      <div className="h-7 w-40 bg-gray-200 rounded animate-pulse mb-6" />
+      <div className="flex gap-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="w-64 flex-shrink-0">
+            <div className="h-5 w-20 bg-gray-200 rounded animate-pulse mb-3" />
+            {[1, 2, 3].map((j) => (
+              <div key={j} className="h-16 bg-gray-100 rounded-lg animate-pulse mb-2" />
+            ))}
+          </div>
+        ))}
+      </div>
+    </main>
+  )
+}
+```
+
+### 5. 에러 UI 생성
+
+```tsx
+/* app/board/[boardId]/error.tsx */
+'use client'
+
+export default function BoardError({
+  error,
+  reset,
+}: {
+  error: Error
+  reset: () => void
+}) {
+  return (
+    <main className="p-6 text-center">
+      <p className="text-red-500 mb-4">{error.message}</p>
+      <button
+        onClick={reset}
+        className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm"
+      >
+        다시 시도
+      </button>
+    </main>
+  )
+}
+```
+
+### 6. 확인
+
+- `http://localhost:3000/board` → 500ms 후 보드 목록 표시
+- `http://localhost:3000/board/board-1` → 스켈레톤 후 칸반 뷰 표시
+- `http://localhost:3000/board/board-999` → 에러 UI + "다시 시도" 버튼 표시

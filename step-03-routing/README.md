@@ -192,3 +192,87 @@ export default function BoardDetailPage({ params }: Props) {
 - [ ] `<Link>` 와 `useRouter().push()` 의 차이를 안다
 - [ ] `/board/[boardId]` 경로를 실제로 만들어봤다
 - [ ] 보드 목록에서 상세 페이지로 이동이 되는지 확인했다
+
+---
+
+## 실습
+
+> 📁 작업 위치: `project-kanban/kanban-board/`
+
+### 1. 보드 목록 페이지 생성
+
+```tsx
+/* app/board/page.tsx */
+import Link from 'next/link'
+
+// Step 06에서 DB 연동으로 교체 예정 — 지금은 목업 데이터 사용
+const MOCK_BOARDS = [
+  { id: 'board-1', title: '프로젝트 A' },
+  { id: 'board-2', title: '프로젝트 B' },
+]
+
+export default function BoardListPage() {
+  return (
+    <main className="p-8">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">내 보드</h1>
+        <Link
+          href="/board/new"
+          className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600"
+        >
+          + 새 보드
+        </Link>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {MOCK_BOARDS.map((board) => (
+          <Link
+            key={board.id}
+            href={`/board/${board.id}`}
+            className="block border rounded-xl p-5 hover:shadow-md transition"
+          >
+            <h2 className="font-semibold">{board.title}</h2>
+          </Link>
+        ))}
+      </div>
+    </main>
+  )
+}
+```
+
+### 2. 보드 상세 페이지 생성
+
+```tsx
+/* app/board/[boardId]/page.tsx */
+type Props = {
+  params: { boardId: string }
+}
+
+export default function BoardDetailPage({ params }: Props) {
+  return (
+    <main className="p-8">
+      <h1 className="text-2xl font-bold mb-6">보드: {params.boardId}</h1>
+      <p className="text-gray-400">Step 05에서 칸반 뷰를 구현합니다.</p>
+    </main>
+  )
+}
+```
+
+### 3. 새 보드 생성 페이지
+
+```tsx
+/* app/board/new/page.tsx */
+export default function NewBoardPage() {
+  return (
+    <main className="p-8 max-w-md">
+      <h1 className="text-2xl font-bold mb-6">새 보드 만들기</h1>
+      <p className="text-gray-400">Step 07에서 폼을 구현합니다.</p>
+    </main>
+  )
+}
+```
+
+### 4. 확인
+
+- `http://localhost:3000/board` → 보드 목록
+- 보드 카드 클릭 → `/board/board-1` 이동
+- `+ 새 보드` 클릭 → `/board/new` 이동

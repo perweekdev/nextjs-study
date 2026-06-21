@@ -205,3 +205,122 @@ async function moveCard(cardId: string, targetColumnId: string) {
 - [ ] 쿼리 파라미터를 `searchParams`로 읽을 수 있다
 - [ ] Server Action과 API Route를 언제 쓰는지 구분할 수 있다
 - [ ] 카드 이동(드래그앤드롭) API를 설계해봤다
+
+---
+
+## 실습
+
+> 📁 작업 위치: `project-kanban/kanban-board/`
+
+### 1. 보드 목록 API
+
+```ts
+/* app/api/boards/route.ts */
+import { NextResponse } from 'next/server'
+import { store } from '@/lib/store'
+
+export async function GET() {
+  const boards = store.boards.map(({ id, title }) => ({ id, title }))
+  return NextResponse.json(boards)
+}
+
+export async function POST(request: Request) {
+  const body = await request.json()
+  if (!body.title?.trim()) {
+    return NextResponse.json({ error: '제목은 필수입니다' }, { status: 400 })
+  }
+
+  const newBoard = {
+    id: `board-${Date.now()}`,
+    title: body.title.trim(),
+    columns: [
+      { id: `col-${Date.now()}-1`, title: 'Todo', cards: [] },
+      { id: `col-${Date.now()}-2`, title: 'In Progress', cards: [] },
+      { id: `col-${Date.now()}-3`, title: 'Done', cards: [] },
+    ],
+  }
+  store.boards.push(newBoard)
+  return NextResponse.json(newBoard, { status: 201 })
+}
+```
+
+### 2. 보드 상세 API
+
+```ts
+/* app/api/boards/[boardId]/route.ts */
+import { NextRequest, NextResponse } from 'next/server'
+import { store } from '@/lib/store'
+
+type Context = { params: { boardId: string } }
+
+export async function GET(_req: NextRequest, { params }: Context) {
+  const board = store.boards.find((b) => b.id === params.boardId)
+  if (!board) return NextResponse.json({ error: '보드를 찾을 수 없습니다' }, { status: 404 })
+  return NextResponse.json(board)
+}
+
+export async function DELETE(_req: NextRequest, { params }: Context) {
+  const idx = store.boards.findIndex((b) => b.id === params.boardId)
+  if (idx === -1) return NextResponse.json({ error: '보드를 찾을 수 없습니다' }, { status: 404 })
+  store.boards.splice(idx, 1)
+  return new NextResponse(null, { status: 204 })
+}
+```
+
+### 3. 카드 이동 API (드래그앤드롭용)
+
+```ts
+/* app/api/cards/[cardId]/move/route.ts */
+import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
+import { store } from '@/lib/store'
+
+type Context = { params: { cardId: string } }
+
+export async function PATCH(request: NextRequest, { params }: Context) {
+  const { targetColumnId } = await request.json()
+
+  let movedCard = null
+
+  // 기존 컬럼에서 카드 제거
+  for (const board of store.boards) {
+    for (const column of board.columns) {
+      const idx = column.cards.findIndex((c) => c.id === params.cardId)
+      if (idx !== -1) {
+        movedCard = column.cards.splice(idx, 1)[0]
+        break
+      }
+    }
+    if (movedCard) break
+  }
+
+  if (!movedCard) return NextResponse.json({ error: '카드를 찾을 수 없습니다' }, { status: 404 })
+
+  // 타겟 컬럼에 카드 추가
+  for (const board of store.boards) {
+    const target = board.columns.find((c) => c.id === targetColumnId)
+    if (target) {
+      target.cards.push(movedCard)
+      break
+    }
+  }
+
+  revalidatePath('/board/[boardId]', 'page')
+  return NextResponse.json({ success: true })
+}
+```
+
+### 4. 확인 (브라우저 또는 터미널에서)
+
+```bash
+# 보드 목록 조회
+curl http://localhost:3000/api/boards
+
+# 보드 생성
+curl -X POST http://localhost:3000/api/boards \
+  -H "Content-Type: application/json" \
+  -d '{"title": "새 프로젝트"}'
+
+# 보드 상세 조회
+curl http://localhost:3000/api/boards/board-1
+```
