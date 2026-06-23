@@ -7,6 +7,7 @@
 
 ## 이 저장소의 구조
 - `step-01-intro` ~ `step-12-deploy`: 순서대로 학습하는 교육자료 (각 README.md)
+- `step-13-zustand`, `step-14-tanstack-query`: 심화 챕터 (기초 완주 후 학습)
 - `project-kanban`: 전체 개념을 통합하는 실습 프로젝트 설계
 
 ## 커리큘럼 진행 순서
@@ -23,9 +24,14 @@
 11. 최적화 (next/image, next/font, next/link)
 12. 배포 (Vercel, 환경변수)
 
+### 심화 챕터 (기초 12단계 + 칸반 실습 완주 후)
+13. 클라이언트 전역 상태 (Zustand — selector, Provider 패턴)
+14. 서버 상태 관리 (TanStack Query — 낙관적 업데이트, Hydration)
+
 ## 실습 프로젝트
 **칸반 보드** — 드래그앤드롭, 팀 협업, 실시간 업데이트
-- 기술 스택: Next.js 14+, TypeScript, Tailwind CSS, Prisma, NextAuth.js
+- 기술 스택: Next.js 16, TypeScript, Tailwind CSS v4, Prisma, NextAuth.js
+- 심화: Zustand(클라이언트 상태), TanStack Query(서버 상태)
 - 각 Step 개념이 칸반 보드의 어느 부분에 적용되는지 연결해서 설명할 것
 
 ## Claude에게 요청하는 역할
@@ -36,10 +42,11 @@
 - 코드 리뷰 요청 시 **Next.js App Router 베스트 프랙티스** 기준으로 피드백
 
 ## 현재 사용 중인 기술 버전
-- Next.js: 14+
-- Node.js: 18+
+- Next.js: 16 (App Router)
+- React: 19
+- Node.js: 20+
 - TypeScript: 5+
-- Tailwind CSS: 3+
+- Tailwind CSS: 4+
 
 ## 학습 규칙
 - 한국어로 소통

@@ -22,6 +22,9 @@
 | [Step 11](./step-11-optimization/README.md) | 최적화 — next/image, next/font, next/link | 🔜 |
 | [Step 12](./step-12-deploy/README.md) | 배포 — Vercel, 환경변수, next.config.js | 🔜 |
 | [Project](./project-kanban/README.md) | 실습 프로젝트 — 칸반 보드 전체 구현 | 🔜 |
+| **심화** | | |
+| [Step 13](./step-13-zustand/README.md) | 클라이언트 전역 상태 — Zustand, selector, Provider 패턴 | 🔜 |
+| [Step 14](./step-14-tanstack-query/README.md) | 서버 상태 관리 — TanStack Query, 낙관적 업데이트, Hydration | 🔜 |
 
 ---
 
